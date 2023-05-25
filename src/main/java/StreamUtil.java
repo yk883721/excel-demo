@@ -1,8 +1,6 @@
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
+import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 
 public class StreamUtil {
@@ -13,6 +11,15 @@ public class StreamUtil {
                 .filter(v -> v!=null && groupingKey.apply(v) != null)
                 .collect(
                         Collectors.groupingBy(groupingKey)
+                );
+    }
+
+    public static <T, K, V> Map<K, V> listToMap(List<T> dataList, Function<T, K> keyFunc, Function<T, V> valueFunc){
+        return dataList
+                .stream()
+                .filter(Objects::nonNull)
+                .collect(
+                        Collectors.toMap(keyFunc, valueFunc, (v1, v2) -> v1)
                 );
     }
 
@@ -35,6 +42,16 @@ public class StreamUtil {
                 .filter(v -> v!=null && groupingKey.apply(v) != null)
                 .collect(
                         Collectors.groupingBy(groupingKey, Collectors.counting())
+                );
+    }
+
+
+    public static <T, R> Map<R, Integer> groupingSum(List<T> dataList, Function<T, R> groupingKey, ToIntFunction<T> summingKey){
+        return dataList
+                .stream()
+                .filter(v -> v != null && groupingKey.apply(v) != null)
+                .collect(
+                        Collectors.groupingBy(groupingKey, Collectors.summingInt(summingKey))
                 );
     }
 
@@ -66,6 +83,20 @@ public class StreamUtil {
                         )
                 );
     }
+
+    public static <T, E, R> Map<E, Set<R>> groupingThenDistinctSet(List<T> dataList,
+                                                                     Function<T, E> groupingKey,
+                                                                     Function<T, R> distinctKey){
+        return dataList
+                .stream()
+                .filter(v -> v != null && groupingKey.apply(v) != null)
+                .collect(
+                        Collectors.groupingBy(groupingKey,
+                                Collectors.mapping(distinctKey, Collectors.toSet())
+                        )
+                );
+    }
+
 
     public static <T, E, R> Map<E, List<R>> groupingThenDistinctList(List<T> dataList,
                                                                    Function<T, E> groupingKey,
