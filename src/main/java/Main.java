@@ -1,9 +1,14 @@
 import com.alibaba.excel.EasyExcel;
+import com.alibaba.excel.write.style.column.LongestMatchColumnWidthStyleStrategy;
 import handler.CustomCellWriteHandler;
 import handler.CustomSheetWriteHandler;
+import handler.MatchColumnWidthHandler;
 import model.SpeData;
 
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class Main {
 
@@ -47,12 +52,15 @@ public class Main {
 
 
         // pHeads 处理
+        List<Integer> mergeCountList = new ArrayList<>();
         List<String> pHeads = new ArrayList<>(Arrays.asList("", ""));
         for (String pId : professionalIds) {
             String pName = pId2NameMap.getOrDefault(pId, " - ");
 
             String pValueStr = pName + proPlanCountMap.getOrDefault(pId, 0) + "人";
             int sCountWithP = sSortMap.getOrDefault(pId, Collections.emptyList()).size();
+
+            mergeCountList.add(sCountWithP + 1);
             for (int i = 0; i < (sCountWithP + 1); i++) {
                 pHeads.add(pValueStr);
             }
@@ -100,10 +108,9 @@ public class Main {
                     dataRow.add(unitAndProAndSpeCount == 0 ? "" : String.valueOf(unitAndProAndSpeCount));
 
                     pSum += unitAndProAndSpeCount * typePlanCount;
-
                 }
-                dataRow.add(String.valueOf(pSum));
 
+                dataRow.add(pSum == 0 ?"":String.valueOf(pSum));
             }
             index++;
             dataRows.add(dataRow);
@@ -172,14 +179,16 @@ public class Main {
 
         excelDataList.forEach(System.out::println);
 
+        Integer mergeCount = mergeCountList.stream().mapToInt(Integer::intValue).sum();
+
         // 写法1
         String fileName = "out.xlsx";
 //        // 这里 需要指定写用哪个class去写，然后写到第一个sheet，名字为模板 然后文件流会自动关闭
         EasyExcel.write(fileName)
                 .inMemory(true)
-//                .registerWriteHandler(new LongestMatchColumnWidthStyleStrategy())
-                .registerWriteHandler(new CustomSheetWriteHandler())
-                .registerWriteHandler(new CustomCellWriteHandler())
+                .registerWriteHandler(new MatchColumnWidthHandler())
+                .registerWriteHandler(new CustomSheetWriteHandler(mergeCountList))
+                .registerWriteHandler(new CustomCellWriteHandler(mergeCount))
                 .sheet("模板").doWrite(excelDataList);
 
     }
